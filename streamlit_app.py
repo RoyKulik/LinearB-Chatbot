@@ -1,5 +1,6 @@
-
 import streamlit as st
+import os
+
 from streamlit_chat import message
 from streamlit_extras.colored_header import colored_header
 from streamlit_extras.add_vertical_space import add_vertical_space
@@ -9,6 +10,7 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.chains import ConversationalRetrievalChain
 from langchain.vectorstores import Chroma
 from langchain.prompts.prompt import PromptTemplate
+from PIL import Image
 
 _template = """You are a LinearB customer support agent. You are chatting with a customer who is asking about LinearB product.
 Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
@@ -17,14 +19,12 @@ Chat History:
 {chat_history}
 Follow Up Input: {question}
 Standalone question:"""
+
 CUSTOM_HELP_BOT_PROMPT = PromptTemplate.from_template(_template)
-
-from PIL import Image
-import os
-
 PERSIST_DIRECTORY = ".chroma/help_docs"
 
-
+# Everything is accessible via the st.secrets dict:
+# And the root-level secrets are also accessible as environment variables:
 st.set_page_config(page_title="LinearB chatbot")
 
 image = Image.open('./linearb.png')
@@ -35,12 +35,12 @@ st.image(image, width=100)
 if "chain" not in st.session_state:
     import config
     db = Chroma(persist_directory=PERSIST_DIRECTORY, 
-            embedding_function=OpenAIEmbeddings(), 
+            embedding_function=OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"]), 
             collection_name="help_docs")
     
     # # expose this index in a retriever interface
     retriever = db.as_retriever(search_type="similarity", search_kwargs={"k":4})
-    qa_retrieval_chain = ConversationalRetrievalChain.from_llm(llm=OpenAI(),
+    qa_retrieval_chain = ConversationalRetrievalChain.from_llm(llm=OpenAI(openai_api_key=st.secrets["OPENAI_API_KEY"]),
                                                                condense_question_prompt=CUSTOM_HELP_BOT_PROMPT,
                                                             retriever=retriever,
                                                             return_source_documents=False)
