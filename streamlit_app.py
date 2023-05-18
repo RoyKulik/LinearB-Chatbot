@@ -43,9 +43,10 @@ if "chain" not in st.session_state:
     qa_retrieval_chain = ConversationalRetrievalChain.from_llm(llm=OpenAI(model_name="gpt-3.5-turbo",openai_api_key=st.secrets["OPENAI_API_KEY"]),
                                                                condense_question_prompt=CUSTOM_HELP_BOT_PROMPT,
                                                             retriever=retriever,
-                                                            return_source_documents=False)
+                                                            return_source_documents=True)
     st.session_state['chain'] = qa_retrieval_chain
     st.session_state['history'] = []
+    st.session_state['resources'] = ["https://linearb.helpdocs.io/"]
     
 
 # Sidebar contents
@@ -85,23 +86,27 @@ with input_container:
 # Response output
 ## Function for taking user prompt as input followed by producing AI generated responses
 def generate_response(prompt):
-    for i, message in enumerate(st.session_state['history']):
-        print(f"{i}:{message}")
     chain = st.session_state.chain
     response = chain({'chat_history':st.session_state.history,'question':prompt})
     return response
+
+
 
 ## Conditional display of AI generated responses as a function of user provided prompts
 with response_container:
     if user_input:
         response = generate_response(user_input)
         st.session_state.history.append((response['question'], response['answer']))
+        resources = list(set([document.metadata['url'] for document in response['source_documents']]))
         st.session_state.past.append(user_input)
         st.session_state.generated.append(response['answer'])
+        st.session_state.resources.append(resources)
         
     if st.session_state['generated']:
         for i in range(len(st.session_state['generated'])):
             message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
             message(st.session_state["generated"][i], key=str(i))
+            # add resources as hover text
+            st.write(f"Resources: {st.session_state.resources[i]}")
     
     st.button('Clear chat history', on_click=lambda: st.session_state.clear())
