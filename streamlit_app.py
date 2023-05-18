@@ -40,7 +40,7 @@ if "chain" not in st.session_state:
     
     # # expose this index in a retriever interface
     retriever = db.as_retriever(search_type="similarity", search_kwargs={"k":4})
-    qa_retrieval_chain = ConversationalRetrievalChain.from_llm(llm=OpenAI(openai_api_key=st.secrets["OPENAI_API_KEY"]),
+    qa_retrieval_chain = ConversationalRetrievalChain.from_llm(llm=OpenAI(model_name="gpt-3.5-turbo",openai_api_key=st.secrets["OPENAI_API_KEY"]),
                                                                condense_question_prompt=CUSTOM_HELP_BOT_PROMPT,
                                                             retriever=retriever,
                                                             return_source_documents=False)
